@@ -1,1 +1,1 @@
-./Q2.sh lena.png lena_modified.png
+python Q2.py $1 $2

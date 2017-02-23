@@ -1,1 +1,1 @@
-./Q1.sh matrixA.txt matrixB.txt
+python Q1.py $1 $2
