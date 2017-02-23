@@ -8,7 +8,7 @@ matrix2 = numpy.loadtxt(fname=sys.argv[2], dtype='int', delimiter=',', ndmin=2)
 matrix3 = numpy.dot(matrix1, matrix2)
 
 # sort
-array = matrix3[0]
+array = numpy.reshape(matrix3, (1,numpy.product(matrix3.shape)))[0]
 array.sort()
 
 # output
