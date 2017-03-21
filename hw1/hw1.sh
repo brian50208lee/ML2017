@@ -1,1 +1,1 @@
-Python2.7 hw1.py $1 $2 $3
+Python2.7 hw1_best.py $1 $2 $3

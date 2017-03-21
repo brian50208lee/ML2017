@@ -4,9 +4,13 @@ def parse(trainfile, testfile, feature=xrange(18), dim=1):
 	# parse training data => train = [([d11,...,d1n],[t11,...,t1m]),...,([dk1,...,dkn],[tk1,...,tkm])]
 	# format train = [(data list, target list), ...]
 	train = np.array([line.strip().replace('NR','0').split(',')[3:] for line in open(trainfile)]).astype(float)[1:]
-	train = np.vstack([arr.reshape(18,24).T.reshape(-1,18).tolist() for arr in train.reshape([-1,18*24])])
-	train = [(train[i:i+9].reshape(-1).tolist(), [train[i+9][9]]) for i in xrange(len(train)-9)]
+	train = np.vstack([arr.reshape(18,24).T.reshape(24,18).tolist() for arr in train.reshape([-1,18*24])])
+	train = [train[m*480:m*480+480] for m in xrange(12)]
+	train = [(part[i:i+9].reshape(-1).tolist(), [part[i+9][9]]) for part in train for i in xrange(len(part)-9)]
 	
+	# rm data pair contain -1
+	train = [pair for pair in train if -1 not in pair[0] and -1 not in pair[1]]
+
 	# parse testing data => test = [[d11,...,d1n],...,[dk1,...,dkn]]
 	# format train = [data list, ...]
 	test = np.array([line.strip().replace('NR','0').split(',')[2:] for line in open(testfile)]).astype(float)

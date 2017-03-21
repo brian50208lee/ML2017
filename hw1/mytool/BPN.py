@@ -1,4 +1,4 @@
-import random
+import random,math
 import numpy as np
 
 class BPN(object):
@@ -42,14 +42,14 @@ class BPN(object):
             out = self.feedforward(data)
             self.calError(desired)
             self.reweight()
-
-            #print 'loss: ', self.loss_func(out, desired)
+            
+            # updata error
             self.iter += 1
             self.loss += self.loss_func(out, desired)
             if (self.iter % self.print_iter) == 0:
                 self.loss /= self.print_iter
-                #print "weight:", self.weights
-                print "iter: %-10d\tloss: %e" % (self.iter ,self.loss)
+                print "iter: %-10dAvgError: %e" % (self.iter ,self.loss)
+                #print "%e" % (self.loss)
                 self.loss = 0.0
 
     def evaluate(self, trainset):
@@ -57,10 +57,9 @@ class BPN(object):
         for data, desired in trainset:
             out = self.feedforward(data)
             self.calError(desired)
-
             m_loss += self.loss_func(out, desired)
         m_loss /= len(trainset)
-        print "loss: %e" % (m_loss)
+        print "AvgError: %e" % (m_loss)
         return m_loss
 
     def traingroup(self, trainset):
@@ -85,8 +84,8 @@ class BPN(object):
         self.iter += 1
         out = self.activate[self.num_layers-1]
         out = np.delete(out, out.size - 1, 1)[0]
-        loss /= len(trainset) 
-        print "iter: %-10d\tloss: %e" % (self.iter ,loss)
+        m_loss /= len(trainset) 
+        print "iter: %-10d\tAvgError: %e" % (self.iter ,m_loss)
                 
 
     def test(self, data, printout = True):
@@ -157,7 +156,11 @@ class BPN(object):
         loss = 0.0
         for des, act in zip(out_desired, out_actual):
             loss += (des - act) * (des - act)
-        loss /= 2
+        return loss
+
+    def loss_RMSE(self, out_actual, out_desired):
+        loss = self.loss_MSE(out_actual, out_desired)
+        loss = math.sqrt(loss)
         return loss
 
 def example():
