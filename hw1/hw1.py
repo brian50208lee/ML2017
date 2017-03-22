@@ -10,9 +10,7 @@ outfile = sys.argv[3] if len(sys.argv) > 3 else './res.csv'
 # parse file
 trainset, testset = parser.parse(trainfile, testfile, feature=[9], dim=1)
 evaluset = trainset[-1000:]
-#trainset = trainset[:-1000]
-random.shuffle(trainset)
-trainset = trainset[:500]
+trainset = trainset[:-1000]
 
 def train(maxiter=10):
 	for i in xrange(maxiter):
@@ -34,7 +32,7 @@ def output():
 
 
 dim = len(trainset[0][0])
-reg = BPN.BPN(sizes=[dim,1], learn_alpha=0.00001, learn_reg=0.00001, print_iter=len(trainset))
-train(500)
+reg = BPN.BPN(sizes=[dim,1], learn_alpha=0.00001, learn_reg=0.00000, print_iter=len(trainset))
+train(20)
 print reg.evaluate(evaluset)
 
