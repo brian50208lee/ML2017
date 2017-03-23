@@ -1,7 +1,7 @@
 import random,math
 import numpy as np
 
-class BPN(object):
+class LR(object):
 
     def __init__(self, sizes, learn_alpha = 0.5, learn_reg = 0.0, print_iter = 1000):
         # set info
@@ -163,25 +163,6 @@ class BPN(object):
         loss = math.sqrt(loss)
         return loss
 
-def example():
-    print   '''------------------------------
->>> bpn = BPN(sizes = [3,3,3,1], learn_alpha = 0.001, learn_reg = 0.0, print_iter = 1000)
->>> for i in xrange(1000):
-...     bpn.train([([1,1,1],[5])])
-...     bpn.train([([-1,-1,-1],[-5])])
-...     bpn.train([([5,1,1],[20])])
->>> bpn.test([1,1,1])
->>> bpn.test([-1,-1,-1])
->>> bpn.test([5,1,1])
---------------------'''
-    bpn = BPN(sizes = [3,3,3,1], learn_alpha = 0.001, learn_reg = 0.0, print_iter = 1000)
-    for i in xrange(1000):
-        bpn.train([([1,1,1],[5])])
-        bpn.train([([-1,-1,-1],[-5])])
-        bpn.train([([5,1,1],[20])])
-    bpn.test([1,1,1])
-    bpn.test([-1,-1,-1])
-    bpn.test([5,1,1])
 
 
 

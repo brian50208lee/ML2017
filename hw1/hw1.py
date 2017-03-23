@@ -1,6 +1,6 @@
 import sys, random
 import mytool.parser as parser
-import mytool.BPN as BPN
+import mytool.LR as LR
 
 # set file
 trainfile = sys.argv[1] if len(sys.argv) > 1 else './data/train.csv'
@@ -32,7 +32,7 @@ def output():
 
 
 dim = len(trainset[0][0])
-reg = BPN.BPN(sizes=[dim,1], learn_alpha=0.00001, learn_reg=0.00000, print_iter=len(trainset))
+reg = LR.LR(sizes=[dim,1], learn_alpha=0.00001, learn_reg=0.00000, print_iter=len(trainset))
 train(20)
 print reg.evaluate(evaluset)
 
