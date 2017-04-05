@@ -1,0 +1,1 @@
+python2.7 hw2_generative.py "$@"

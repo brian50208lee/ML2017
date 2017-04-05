@@ -2,13 +2,14 @@ import random,math
 import numpy as np
 
 class BPN(object):
-
-    def __init__(self, sizes, learn_alpha = 0.5, learn_reg = 0.0, print_iter = 1000):
+    def __init__(self, sizes, learn_rate = 1, learn_reg = 0.0, dec_adadelta = 0.95 , print_iter = 1000):
         # set info
         self.sizes = sizes
-        self.num_layers = len(sizes)
-        self.learn_alpha = learn_alpha
+        self.lay_num = len(sizes)
+        self.learn_rate = learn_rate
         self.learn_reg = learn_reg
+        self.adadelta_dec = dec_adadelta
+        self.adadelta_eps = 1E-8
 
         # set activate function and loss functino
         self.activate_func = self.act_sigmoid
@@ -17,7 +18,9 @@ class BPN(object):
 
         # init weights [w1, ... , wn, wb]
         self.weights = [np.random.randn(x+1, y) for x, y in zip(sizes[:-1], sizes[1:])]
-     
+        self.adadelta_G = [np.zeros((x+1, y)) for x, y in zip(sizes[:-1], sizes[1:])]
+        self.adadelta_D = [np.zeros((x+1, y)) for x, y in zip(sizes[:-1], sizes[1:])]
+       
         # tmp training data [a1, ... , an, base = 1]
         self.activate = [np.zeros((1, num_neural+1)) for num_neural in sizes]
         
@@ -36,115 +39,113 @@ class BPN(object):
         self.weights = np.load(filepath)
         self.weights = [np.vstack(nparray) for nparray in self.weights]
 
-
     def train(self, trainset):
-        for data, desired in trainset:
-            out = self.feedforward(data)
-            self.calError(desired)
+        err = [0.0 for i in xrange(len(self.error))]
+        for x, y in trainset:
+            o = self.feedforward(x)
+            self.calError(y)
+            err = [err[i] + self.error[i] for i in xrange(len(self.error))]
+            self.iter += 1
+        err = [e/len(trainset) for e in err]
+        self.error = err
+        self.reweight()
+
+        # print error
+        print "iter: %-10dAvgError: %e" % (self.iter, err[-1])
+
+    def train_sgd(self, trainset):
+        for x, y in trainset:
+            o = self.feedforward(x)
+            self.calError(y)
             self.reweight()
             
             # updata error
             self.iter += 1
-            self.loss += self.loss_func(out, desired)
+            self.loss += self.loss_func(o, y)
             if (self.iter % self.print_iter) == 0:
                 self.loss /= self.print_iter
-                print "iter: %-10dAvgError: %e" % (self.iter ,self.loss)
-                #print "%e" % (self.loss)
+                print "iter: %-10dAvgError: %e" % (self.iter, self.loss)
                 self.loss = 0.0
 
-    def evaluate(self, trainset):
+    def evaluate(self, evaluate_set):
         correct = 0.0
-        for data, desired in trainset:
-            out = self.feedforward(data)
-            if int(desired[0] + 0.5) == int(out[0] + 0.5):
-                correct += 1.0
-        correct /= len(trainset)
+        for x, y in evaluate_set:
+            o = self.feedforward(x)
+            equal = True
+            for i in xrange(len(o)):
+                if int(y[0] + 0.5) != int(o[0] + 0.5):
+                    equal = False
+                    break
+            if equal:
+                correct += 1
+        correct /= len(evaluate_set)
         print "Correct: %e" % (correct)
         return correct
-
-    def traingroup(self, trainset):
-        datasize = len(trainset)
-        act = [np.zeros((1, num_neural+1)) for num_neural in self.sizes]
-        err = [np.zeros((1, num_neural)) for num_neural in self.sizes]
-        tar = [0.0]
-        m_loss = 0.0
-        for data, desired in trainset:
-            tar = [x + y for x, y in zip(tar, desired)]
-            out = self.feedforward(data)
-            self.calError(desired)
-            act = [x + y for x, y in zip(act, self.activate)]
-            err = [x + y for x, y in zip(err, self.error)]
-            m_loss += self.loss_func(out, desired)
-
-        self.activate = [a/datasize for a in act]
-        self.error = [e/datasize for e in err]
-        tar = [t/datasize for t in tar]
-        self.reweight()
-        
-        self.iter += 1
-        out = self.activate[self.num_layers-1]
-        out = np.delete(out, out.size - 1, 1)[0]
-        m_loss /= len(trainset) 
-        print "iter: %-10d\tAvgError: %e" % (self.iter ,m_loss)
                 
 
-    def test(self, data, printout = True):
-        out = self.feedforward(data)
-        if printout:    print "data:%s\n=>\t%.20f" % (data,out)
-        return out
+    def test(self, x, printout = True):
+        o = self.feedforward(x)
+        if printout:    
+            print "Test:%s\t=>\t%s" % (x, o)
+        return o
 
-    def feedforward(self, data):
-
-        self.activate[0] = np.insert(np.array([data]), len(data), 1, axis=1)
+    def feedforward(self, x):
+        # init input lay
+        self.activate[0] = np.array([x])
         
-        for layer in xrange(1, len(self.activate)):
-            self.activate[layer] = self.activate[layer-1].dot(self.weights[layer-1])
-            self.activate[layer] = self.activate_func(self.activate[layer])
-            self.activate[layer] = np.insert(self.activate[layer], self.activate[layer].size, 1, axis=1)
+        # forward
+        for lay in xrange(0, self.lay_num - 1):
+            self.activate[lay] = np.append(self.activate[lay], [[1]], axis=1)
+            self.activate[lay+1] = self.activate[lay].dot(self.weights[lay])
+            self.activate[lay+1] = self.activate_func(self.activate[lay+1])
+            self.activate[lay] = np.delete(self.activate[lay], -1, axis=1)
+        
+        return self.activate[self.lay_num - 1][0]
 
-        result = self.activate[self.num_layers-1]
-        result = np.delete(result, result.size - 1, 1)
-        return result[0]
-
-    def calError(self, desired):
+    def calError(self, y):
         # error in output layer
-        target = np.array([desired])
-        a = self.activate[self.num_layers - 1]
-        a = np.delete(a, a.size - 1, 1)
-        e = target - a
-        self.error[self.num_layers - 1] = e * self.deactivate_func(a)
+        a = self.activate[self.lay_num - 1]
+        e = np.array([y]) - a
+        self.error[self.lay_num - 1] = e * self.deactivate_func(a)
 
         # error in other layer
-        for lay in xrange(self.num_layers - 2, 0, -1): # each layer
-            e = self.weights[lay].dot(self.error[lay + 1].T).T
-            e = np.delete(e, e.size - 1, 1)
+        for lay in xrange(self.lay_num - 2, 0, -1): # n - 2 to 1
             a = self.activate[lay]
-            a = np.delete(a, a.size - 1, 1)
+            e = self.weights[lay][:-1].dot(self.error[lay + 1].T).T
             self.error[lay] = e * self.deactivate_func(a)
 
     def reweight(self):
-        # reweight output layer
-        lay = self.num_layers - 2
-        self.weights[lay] = (
-                self.weights[lay]
-                + self.learn_alpha * self.activate[lay].T.dot(self.error[lay + 1]) 
-                - 2 * self.learn_reg * self.weights[lay]
-            )
-        
         # reweight other layer
-        for lay in reversed(xrange(self.num_layers - 2)):
-            self.weights[lay] = (
-                    self.weights[lay]
-                    + self.learn_alpha * self.activate[lay].T.dot(self.error[lay + 1])
-                    - 2 * self.learn_reg * self.weights[lay]
-                )
-
+        for lay in xrange(self.lay_num - 2, -1, -1): # n - 2 to 0
+            # gradient
+            g = np.append(self.activate[lay], [[1]], axis=1).T.dot(self.error[lay + 1])
+     
+            
+            # delta w
+            self.adadelta_G[lay] = self.adadelta_dec*self.adadelta_G[lay] + (1-self.adadelta_dec)*g*g
+            delta_w =   (
+                            - np.sqrt(self.adadelta_D[lay] + self.adadelta_eps) 
+                            / np.sqrt(self.adadelta_G[lay] + self.adadelta_eps) 
+                            * g
+                            + self.learn_reg * self.weights[lay]
+                        )
+            self.adadelta_D[lay] = self.adadelta_dec*self.adadelta_D[lay] + (1-self.adadelta_dec)*delta_w*delta_w
+            # reweight
+            self.weights[lay] -= self.learn_rate * delta_w
+            
 
     def act_sigmoid(self, x):
+        x = np.clip(x, -100, 100)
         return 1.0/(1.0+np.exp(-x))
 
     def act_desigmoid(self, y):
         return y*(1-y)
+
+    def act_ReLU(self, z):
+        return np.maximum(0,z)
+
+    def act_deReLU(self, z):
+        return np.minimum(1,np.maximum(0,z))
 
     def act_identity(self, x):
         return x
@@ -152,17 +153,19 @@ class BPN(object):
     def act_deidentity(self, y):
         return 1
 
-    def loss_MSE(self, out_actual, out_desired):
-        if int(out_actual[0] + 0.5) == int(out_desired[0] + 0.5):
-            return 0.0
-            
+    def loss_cross_entropy(self, o, y):
         loss = 0.0
-        for des, act in zip(out_desired, out_actual):
-            loss += (des - act) * (des - act)
+        # unimplement
         return loss
 
-    def loss_RMSE(self, out_actual, out_desired):
-        loss = self.loss_MSE(out_actual, out_desired)
+    def loss_MSE(self, o, y):
+        loss = 0.0
+        for act, des in zip(o, y):
+            loss += (act - des) * (act - des)
+        return loss
+
+    def loss_RMSE(self, o, y):
+        loss = self.loss_MSE(o, y)
         loss = math.sqrt(loss)
         return loss
 
