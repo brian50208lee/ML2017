@@ -11,8 +11,8 @@ from keras.datasets import mnist
 from keras.preprocessing.image import ImageDataGenerator
 
 
-test_file = sys.argv[0] if len(sys.argv) > 0 else './data/test.csv'
-predict_file = sys.argv[1] if len(sys.argv) > 1 else './predict.csv'
+test_file = sys.argv[1] if len(sys.argv) > 1 else './data/test.csv'
+predict_file = sys.argv[2] if len(sys.argv) > 2 else './predict.csv'
 
 # load data
 test_X, test_Y = parser.parse(test_file)

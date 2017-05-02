@@ -11,7 +11,7 @@ from keras.datasets import mnist
 from keras.preprocessing.image import ImageDataGenerator
 
 
-train_file = sys.argv[0] if len(sys.argv) > 0 else './data/train.csv'
+train_file = sys.argv[1] if len(sys.argv) > 1 else './data/train.csv'
 
 
 # load data
