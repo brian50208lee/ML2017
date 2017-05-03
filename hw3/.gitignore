@@ -9,4 +9,4 @@ model/*
 !doc/4_saliency.py
 !doc/5_filter_vis.py
 !doc/5_img_vis.py
-!doc/mytool/*
+!doc/mytool/*.py
