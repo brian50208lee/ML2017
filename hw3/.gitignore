@@ -3,3 +3,9 @@ data/*
 doc/*
 model/*
 *.pyc
+
+
+!doc/3_cofusion.py
+!doc/4_saliency.py
+!doc/5_conv_img_vis.py
+!doc/5_conv_vis.py
