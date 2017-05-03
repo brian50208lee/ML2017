@@ -1,4 +1,4 @@
-import sys, random
+import sys
 from mytool import parser
 import numpy as np
 import keras
@@ -7,8 +7,6 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D, Flatten
 from keras.optimizers import SGD, Adam
 from keras.utils import np_utils
-from keras.datasets import mnist
-from keras.preprocessing.image import ImageDataGenerator
 
 
 test_file = sys.argv[1] if len(sys.argv) > 1 else './data/test.csv'
