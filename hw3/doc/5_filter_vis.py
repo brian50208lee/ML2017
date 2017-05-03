@@ -21,7 +21,7 @@ def grad_ascent(num_step,input_image_data,iter_func):
     return filter_images
 
 def main():
-    emotion_classifier = load_model('model2.h5')
+    emotion_classifier = load_model('../model_best/063834.h5')
     layer_dict = dict([layer.name, layer] for layer in emotion_classifier.layers[:])
     input_img = emotion_classifier.input
 
@@ -58,7 +58,7 @@ def main():
                 plt.xlabel('{:.3f}'.format(filter_imgs[it][i][1]))
                 plt.tight_layout()
             fig.suptitle('Filters of layer {} (# Ascent Epoch {} )'.format(name_ls[cnt], it*RECORD_FREQ))
-            img_path = '5_conv_{}_{}.png'.format(name_ls[cnt], it*RECORD_FREQ)
+            img_path = '5_filter_{}_e{}.png'.format(name_ls[cnt], it*RECORD_FREQ)
             print "save_ephch:{}".format(it*RECORD_FREQ)
             fig.savefig(img_path)
 

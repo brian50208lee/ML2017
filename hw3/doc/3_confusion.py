@@ -36,7 +36,7 @@ def plot_confusion_matrix(cm, classes,title='Confusion matrix',cmap=plt.cm.jet):
 #np.set_printoptions(precision=2)
 
 # load model adn predict
-emotion_classifier = load_model('model2.h5')
+emotion_classifier = load_model('../model_best/063834.h5')
 
 # load data
 X, Y = parser.parse('../data/train.csv')
@@ -50,4 +50,5 @@ predictions = emotion_classifier.predict_classes(dev_feats)
 conf_mat = confusion_matrix(te_labels,predictions)
 plt.figure()
 plot_confusion_matrix(conf_mat, classes=["Angry","Disgust","Fear","Happy","Sad","Surprise","Neutral"])
-plt.show()
+plt.savefig("3_confusion.png")
+#plt.show()

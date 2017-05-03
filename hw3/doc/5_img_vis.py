@@ -5,7 +5,7 @@ from keras import backend as K
 import numpy as np
 
 def main():
-    emotion_classifier = load_model('model2.h5')
+    emotion_classifier = load_model('../model_best/063834.h5')
     layer_dict = dict([layer.name, layer] for layer in emotion_classifier.layers[:])
 
     input_img = emotion_classifier.input
@@ -13,7 +13,7 @@ def main():
     collect_layers = [ K.function([input_img, K.learning_phase()], [layer_dict[name].output]) for name in name_ls ]
 
 
-    X, Y = parser.parse('train_small.csv')
+    X, Y = parser.parse('../data/train_small.csv')
     private_pixels = X/255
     private_pixels = [ private_pixels[i].reshape((1, 48, 48, 1)) for i in range(len(private_pixels)) ]
 
@@ -32,7 +32,7 @@ def main():
             plt.yticks(np.array([]))
             plt.tight_layout()
         fig.suptitle('Output of layer{} (Given image{})'.format(name_ls[cnt], choose_id))
-        img_path = "5_conv_img_{}_{}.png".format(name_ls[cnt], choose_id)
+        img_path = "5_img_{}_{}.png".format(name_ls[cnt], choose_id)
         fig.savefig(img_path)
 
 main()
