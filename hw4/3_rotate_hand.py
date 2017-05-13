@@ -43,7 +43,7 @@ def intrinsic_dimension(X, k1=6, k2=12,estimator='levina',trafo='std'):
     distance = X2.reshape(-1, 1) + X2 - 2*np.dot(X, X.T) #2x br.cast
     distance.sort(1)
 
-    distance[distance<0] = 1e-7
+    distance[distance<=0] = 1e-7
     knnmatrix = .5 * np.log(distance[:, 1:k2+1])
     
     # Compute the ML estimate
@@ -60,14 +60,13 @@ def intrinsic_dimension(X, k1=6, k2=12,estimator='levina',trafo='std'):
         dhat_k = dhat.mean(0)
         no_dims = (dhat_k ** -1).mean()
 
-    return no_dims.round()
+    return no_dims
 
 
 if __name__ == '__main__':
     data = load_imgs()
     print "data shape:", data.shape
-    w, h = data[0].shape
-    data = data.reshape((-1, w * h))
-    id_ = intrinsic_dimension(data, k1=6, k2=12, estimator='levina', trafo='var')
+    data = data.reshape((-1, data[0].size))
+    id_ = intrinsic_dimension(data, k1=150, k2=480, estimator='levina', trafo='var')
     print "Guess Intrinsic Dimension:",id_
 
