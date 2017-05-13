@@ -1,0 +1,1 @@
+python2.7 3_IntrinsicDim_best.py "$@"

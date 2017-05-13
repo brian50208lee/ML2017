@@ -1,0 +1,6 @@
+data/*
+experiment/*
+
+
+.DS_Store
+3_test.py
