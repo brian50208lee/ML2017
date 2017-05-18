@@ -5,6 +5,7 @@ from keras.preprocessing import text,sequence
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, GRU, Dense, Dropout
 from keras import backend as K
+from keras import regularizers
 
 train_data = 'data' + os.sep + 'train_data.csv'
 test_data = sys.argv[1] if len(sys.argv) > 1 else 'data' + os.sep + 'test_data.csv'
@@ -143,22 +144,14 @@ def run_RNN():
 def build_BOW_model(word_index):
 	print('Build BOW model...')
 	model = Sequential()
-	model.add(Dense(2048, activation='relu', input_dim=len(word_index)+1))
-	model.add(Dropout(0.5))
-	model.add(Dense(2048, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(2048, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(1024, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(512, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(256, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(128, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(38, activation='sigmoid'))
-	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=[f1_score])
+	model.add(Dense(2048, activation='sigmoid',kernel_regularizer=regularizers.l2(0.01), input_dim=len(word_index)+1))
+	model.add(Dropout(0.2))
+	model.add(Dense(512, activation='sigmoid',kernel_regularizer=regularizers.l2(0.01)))
+	model.add(Dropout(0.2))
+	model.add(Dense(128, activation='sigmoid',kernel_regularizer=regularizers.l2(0.01)))
+	model.add(Dropout(0.2))
+	model.add(Dense(38, activation='sigmoid',kernel_regularizer=regularizers.l2(0.01)))
+	model.compile(loss='categorical_crossentropy',optimizer='adadelta',metrics=[f1_score])
 	model.summary()
 	return model
 
@@ -170,6 +163,7 @@ def run_BOW():
 	tags = tags_mapping(tags)
 	texts, word_index = texts_mapping(texts)
 	texts =	texts_to_BOW_vectors(texts, word_index)
+	print(texts[-1])
 	texts = texts_TFIDF(texts)
 
 	print(texts[-1])
