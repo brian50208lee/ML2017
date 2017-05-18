@@ -47,8 +47,21 @@ def texts_mapping(texts, map_path='word_index.npy'):
 	return tokenizer.texts_to_sequences(texts), word_index
 
 def texts_padding(texts, maxlen=MAX_SEQUENCE_LENGTH):
-	print('Tests padding...','maxlen:',maxlen)
+	print('Texts padding...','maxlen:',maxlen)
 	return sequence.pad_sequences(texts, maxlen=maxlen)
+
+def texts_to_BOW_vectors(texts, word_index):
+	print('Texts to BOW vector...')
+	BOW_vectors = np.zeros((len(texts), (len(word_index)+1))).astype('float32')
+	for idx, word_idxs in enumerate(texts):
+		for word_idx in word_idxs:
+			if word_idx <= len(word_index):
+				BOW_vectors[idx][word_idx] += 1.0
+	return BOW_vectors
+
+def texts_TFIDF(texts):
+	print('Texts TFIDF...', '(Unimplement)')
+	return texts
 
 def f1_score(y_true,y_pred):
     thresh = 0.4
@@ -81,8 +94,8 @@ def gloveEmbedding(word_index, embedding_dim=300, vector_path=os.sep.join(['data
 
 	return embeddingLayer
 
-def build_model(word_index):
-	print('Build model...')
+def build_RNN_model(word_index):
+	print('Build RNN model...')
 	model = Sequential()
 	embeddingLayer = gloveEmbedding(word_index)
 	model.add(embeddingLayer)
@@ -98,10 +111,7 @@ def build_model(word_index):
 	model.summary()
 	return model
 
-
-
-if __name__ == '__main__':
-
+def run_RNN():
 	# load data
 	ids, tags, texts = load_data()
 
@@ -110,6 +120,47 @@ if __name__ == '__main__':
 	texts, word_index = texts_mapping(texts)
 	texts =	texts_padding(texts)
 
+	# validation
+	valid_size = 100
+	train_X, train_Y = texts[:-valid_size][:], tags[:-valid_size][:]
+	valid_X, valid_Y = texts[-valid_size:], tags[-valid_size:]
+
+	# train
+	model = build_RNN_model(word_index)
+	model.fit(train_X, train_Y,batch_size=32, epochs=30, validation_data=(valid_X,valid_Y))
+
+	# evaluate
+	score, acc = model.evaluate(valid_X, valid_Y, batch_size=32)
+	print('Test score:', score)
+	print('Test accuracy:', acc)
+
+def build_BOW_model(word_index):
+	print('Build BOW model...')
+	model = Sequential()
+	model.add(Dense(2048, activation='relu', input_dim=len(word_index)+1))
+	model.add(Dropout(0.5))
+	model.add(Dense(1024, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(256, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(128, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(38, activation='sigmoid'))
+	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=[f1_score])
+	model.summary()
+	return model
+
+def run_BOW():
+	# load data
+	ids, tags, texts = load_data()
+
+	# pre-processing
+	tags = tags_mapping(tags)
+	texts, word_index = texts_mapping(texts)
+	texts =	texts_to_BOW_vectors(texts, word_index)
+	texts = texts_TFIDF(texts)
 	
 	# validation
 	valid_size = 100
@@ -117,11 +168,12 @@ if __name__ == '__main__':
 	valid_X, valid_Y = texts[-valid_size:], tags[-valid_size:]
 
 	# train
-	model = build_model(word_index)
+	model = build_BOW_model(word_index)
 	model.fit(train_X, train_Y,batch_size=32, epochs=30, validation_data=(valid_X,valid_Y))
 
-	# evaluate
-	score, acc = model.evaluate(valid_X, valid_Y, batch_size=32)
-	print('Test score:', score)
-	print('Test accuracy:', acc)
+
+if __name__ == '__main__':
+	#run_RNN()
+	run_BOW()
+
 	
