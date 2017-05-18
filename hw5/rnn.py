@@ -3,7 +3,7 @@ import numpy as np
 
 from keras.preprocessing import text,sequence
 from keras.models import Sequential
-from keras.layers import Embedding, LSTM, Dense
+from keras.layers import Embedding, LSTM, Dense, Dropout
 from keras import backend as K
 
 train_data = 'data' + os.sep + 'train_data.csv'
