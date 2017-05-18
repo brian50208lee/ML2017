@@ -177,7 +177,7 @@ def run_BOW():
 
 	# train
 	model = build_BOW_model(word_index)
-	model.fit(train_X, train_Y,batch_size=32, epochs=30, validation_data=(valid_X,valid_Y))
+	model.fit(train_X, train_Y,batch_size=32, epochs=50, validation_data=(valid_X,valid_Y))
 
 
 if __name__ == '__main__':
