@@ -73,7 +73,7 @@ def gloveEmbedding(word_index, embedding_dim=300, vector_path=os.sep.join(['data
 	print('Load gloveEmbedding...','embedding_dim:',embedding_dim)
 	# load all vectors from glove
 	vector_path = vector_path.format(embedding_dim)
-	word_vector_map = dict([(line.split()[0], np.array(line.split()[1:]).astype('float32')) for line in open(vector_path)])
+	word_vector_map = dict([(line.split()[0], np.array(line.split()[1:]).astype('float32')) for line in open(vector_path, encodding='utf8')])
 	
 	# create embadding matrix
 	embedding_matrix = np.zeros((len(word_index)+1, embedding_dim))
