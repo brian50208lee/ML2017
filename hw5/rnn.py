@@ -60,8 +60,14 @@ def texts_to_BOW_vectors(texts, word_index):
 	return BOW_vectors
 
 def texts_TFIDF(texts):
-	print('Texts TFIDF...', '(Unimplement)')
-	return texts
+	print('Texts TFIDF...')
+	IDF = np.zeros(texts.shape)
+	IDF[texts!=0] = 1.0
+	IDF = IDF.sum(axis=0)
+	IDF[IDF==0] = len(texts)
+	IDF = np.log(len(texts)/IDF)
+	TFIDF = texts*IDF
+	return TFIDF
 
 def f1_score(y_true,y_pred):
     thresh = 0.4
@@ -166,6 +172,7 @@ def run_BOW():
 	texts =	texts_to_BOW_vectors(texts, word_index)
 	texts = texts_TFIDF(texts)
 
+	print(texts[-1])
 	# validation
 	valid_size = 100
 	train_X, train_Y = texts[:-valid_size][:], tags[:-valid_size][:]
