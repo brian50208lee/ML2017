@@ -3,7 +3,7 @@ import numpy as np
 
 from keras.preprocessing import text,sequence
 from keras.models import Sequential
-from keras.layers import Embedding, LSTM, Dense, Dropout
+from keras.layers import Embedding, LSTM, GRU, Dense, Dropout
 from keras import backend as K
 
 train_data = 'data' + os.sep + 'train_data.csv'
@@ -50,24 +50,14 @@ def texts_padding(texts, maxlen=MAX_SEQUENCE_LENGTH):
 	print('Tests padding...','maxlen:',maxlen)
 	return sequence.pad_sequences(texts, maxlen=maxlen)
 
-def recall(y_true, y_pred):
-	true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-	possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-	recall = true_positives / (possible_positives + K.epsilon())
-	return recall
-def precision(y_true, y_pred):
-	true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-	predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-	precision = true_positives / (predicted_positives + K.epsilon())
-	return precision
-def fbeta_score(y_true, y_pred, beta=1):
-	if K.sum(K.round(K.clip(y_true, 0, 1))) == 0:
-	    return 0
-	p = precision(y_true, y_pred)
-	r = recall(y_true, y_pred)
-	bb = beta ** 2
-	fbeta_score = (1 + bb) * (p * r) / (bb * p + r + K.epsilon())
-	return fbeta_score
+def f1_score(y_true,y_pred):
+    thresh = 0.4
+    y_pred = K.cast(K.greater(y_pred,thresh),dtype='float32')
+    tp = K.sum(y_true * y_pred)
+    
+    precision=tp/(K.sum(y_pred))
+    recall=tp/(K.sum(y_true))
+    return 2*((precision*recall)/(precision+recall))
 
 def gloveEmbedding(word_index, embedding_dim=300, vector_path=os.sep.join(['data','glove.6B','glove.6B.{}d.txt'])):
 	print('Load gloveEmbedding...','embedding_dim:',embedding_dim)
@@ -96,13 +86,15 @@ def build_model(word_index):
 	model = Sequential()
 	embeddingLayer = gloveEmbedding(word_index)
 	model.add(embeddingLayer)
-	model.add(LSTM(embeddingLayer.output_dim, dropout=0.5, recurrent_dropout=0.5))
-	model.add(Dense(500, activation='relu'))
-	model.add(Dropout(0.5))
-	model.add(Dense(500, activation='relu'))
-	model.add(Dropout(0.5))
+	model.add(GRU(embeddingLayer.output_dim, activation='tanh', dropout=0.1))
+	model.add(Dense(512, activation='relu'))
+	model.add(Dropout(0.1))
+	model.add(Dense(256, activation='relu'))
+	model.add(Dropout(0.1))
+	model.add(Dense(128, activation='relu'))
+	model.add(Dropout(0.1))
 	model.add(Dense(38, activation='sigmoid'))
-	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=[fbeta_score])
+	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=[f1_score])
 	model.summary()
 	return model
 
