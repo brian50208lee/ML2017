@@ -137,7 +137,15 @@ def run_RNN():
 def build_BOW_model(word_index):
 	print('Build BOW model...')
 	model = Sequential()
-	model.add(Dense(2048, activation='relu', input_dim=len(word_index)+1))
+	model.add(Dense(8192, activation='relu', input_dim=len(word_index)+1))
+	model.add(Dropout(0.5))
+	model.add(Dense(8192, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(8192, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(4096, activation='relu'))
+	model.add(Dropout(0.5))
+	model.add(Dense(2048, activation='relu'))
 	model.add(Dropout(0.5))
 	model.add(Dense(1024, activation='relu'))
 	model.add(Dropout(0.5))
@@ -161,7 +169,7 @@ def run_BOW():
 	texts, word_index = texts_mapping(texts)
 	texts =	texts_to_BOW_vectors(texts, word_index)
 	texts = texts_TFIDF(texts)
-	
+
 	# validation
 	valid_size = 100
 	train_X, train_Y = texts[:-valid_size][:], tags[:-valid_size][:]
