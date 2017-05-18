@@ -13,7 +13,7 @@ prediction_file = sys.argv[2] if len(sys.argv) > 2 else 'predict.csv'
 def load_data(data_path=train_data):
 	print('Load data...')
 	ids, tags, texts = [], [], []
-	for line in open(data_path,'r').readlines()[1:]:
+	for line in open(data_path, encoding='utf8').readlines()[1:]:
 		_id, _tag, _text = line.strip().split(',',2)
 		_tag = _tag.strip('"').split()
 		ids.append(_id)
@@ -64,8 +64,8 @@ def fbeta_score(y_true, y_pred, beta=1):
 def build_model():
 	print('Build model...')
 	model = Sequential()
-	model.add(Embedding(45969, 256))
-	model.add(LSTM(256, dropout=0.0, recurrent_dropout=0.0))
+	model.add(Embedding(45969, 128))
+	model.add(LSTM(128, dropout=0.5, recurrent_dropout=0.5))
 	model.add(Dense(38, activation='sigmoid'))
 	model.compile(loss='binary_crossentropy',optimizer='adam',metrics=[fbeta_score])
 	model.summary()
@@ -89,10 +89,10 @@ if __name__ == '__main__':
 
 	# train
 	model = build_model()
-	model.fit(train_X, train_Y,batch_size=8, epochs=15, validation_data=(valid_X,valid_Y))
+	model.fit(train_X, train_Y,batch_size=32, epochs=20, validation_data=(valid_X,valid_Y))
 
 	# evaluate
-	score, acc = model.evaluate(valid_X, valid_Y, batch_size=8)
+	score, acc = model.evaluate(valid_X, valid_Y, batch_size=32)
 	print('Test score:', score)
 	print('Test accuracy:', acc)
 
