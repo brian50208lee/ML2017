@@ -1,1 +1,1 @@
-python2.7 rnn.py "$@"
+python3 rnn_best.py "$@"

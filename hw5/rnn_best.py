@@ -12,8 +12,8 @@ test_data_path = sys.argv[1] if len(sys.argv) > 1 else 'data' + os.sep + 'test_d
 predict_file_path = sys.argv[2] if len(sys.argv) > 2 else 'predict.csv'
 
 MAX_SEQUENCE_LENGTH = 306
-TAG_INDEX_PATH = 'tag_index.npy'
-WORD_INDEX_PATH = 'word_index.npy'
+TAG_INDEX_PATH = './model/049580/tag_index.npy'
+WORD_INDEX_PATH = './model/049580/word_index.npy'
 
 def load_train_data(data_path=train_data_path):
 	print('Load training data...')
@@ -133,10 +133,10 @@ def build_RNN_model(word_index):
 	return model
 
 
-def save_model(path='./model/rnn.h5'):
+def _save_model(path='./model/049580/rnn.h5'):
 	model.save(path)
 
-def load_model(path='./model/rnn.h5'):
+def _load_model(path='./model/049580/rnn.h5'):
 	model = load_model(path, custom_objects={'f1_score':f1_score})
 	return model
 
@@ -149,12 +149,12 @@ def output():
 	texts =	texts_padding(texts)
 
 	# load model
-	model = load_model()
+	model = _load_model()
 
 	# predict
 	preds = model.predict(texts)
-	preds[preds<0.4]=0
-	preds[preds>=0.4]=1
+	preds[preds < 0.4]=0
+	preds[preds >= 0.4]=1
 
 	# load tags dictionary
 	tag_index = load_dict(TAG_INDEX_PATH)
@@ -173,7 +173,7 @@ def output():
 		out.write(line)
 	out.close()
 
-
+'''
 # load train data
 ids, tags, texts = load_train_data()
 
@@ -196,7 +196,7 @@ model = build_RNN_model(word_index)
 model.fit(train_X, train_Y,batch_size=128, epochs=70, validation_data=(valid_X,valid_Y))
 
 # save
-save_model()
-
+_save_model()
+'''
 # output
-#output()
+output()

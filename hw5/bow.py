@@ -2,19 +2,19 @@ import sys, os
 import numpy as np
 
 from keras.preprocessing import text, sequence
-from keras.models import Sequential
-from keras.layers import Embedding, Dense, Dropout
-from keras.optimizers import Adam
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 train_data_path = 'data' + os.sep + 'train_data.csv'
 test_data_path = sys.argv[1] if len(sys.argv) > 1 else 'data' + os.sep + 'test_data.csv'
-prediction_file = sys.argv[2] if len(sys.argv) > 2 else 'predict.csv'
+output_file_path = sys.argv[2] if len(sys.argv) > 2 else 'predict.csv'
 
 TAG_INDEX_PATH = 'tag_index.npy'
 WORD_INDEX_PATH = 'word_index.npy'
+IDF_PATH = 'IDF.npy'
 
 def load_train_data(data_path=train_data_path):
 	print('Load training data...')
@@ -50,11 +50,10 @@ def load_dict(path):
 	myDict = np.load(path).item()
 	return myDict
 
-def tags_mapping(tags, load=False, path=TAG_INDEX_PATH):
+def tags_mapping(tags, tag_index=None):
 	print ('Tags mapping...')
-	if load:
-		tag_index = load_dict(path) # load mapping dict
-	else:
+
+	if tag_index is None:
 		tagset = list(set([t for tag in tags for t in tag]))
 		tag_index = dict(zip(tagset, range(len(tagset)))) # create mapping dict	
 	
@@ -67,12 +66,30 @@ def tags_mapping(tags, load=False, path=TAG_INDEX_PATH):
 	mTags = np.array(mTags)
 	return mTags, tag_index
 
-def texts_mapping(texts, map_path='word_index.npy'):
+def texts_mapping(texts, word_index=None):
 	print ('Tests mapping...')
-	tokenizer = text.Tokenizer()
-	tokenizer.fit_on_texts(texts)
+	tokenizer = text.Tokenizer(filters='\'"’“”—‘´!#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',lower=True, split=" ")
+	if word_index is not None: # set word_index
+		tokenizer.word_index = word_index
+	else: # create word_index
+		# concate text
+		allTexts = texts.copy()
+		if test_texts is not None:
+			allTexts = np.concatenate([allTexts, test_texts])
+		tokenizer.fit_on_texts(allTexts)
+
+		# remove stopword
+		'''
+		stopword = ['the', 'and', 'of', 'a', 'to', 'in', 'is', 'his', 's', 'he', 'with', 'her', 'that', 'as', 'by', 'on', 'for', 'an', 'who', 'from', 'she', 'has', 'are', 'it', 'at', 'their', 'but', 'they', 'him', 'when', 'be', 'after', 'one', 'was', 'this', 'which', 'into', 'novel', 'life', 'not', 'out', 'have', 'new', 'up', 'all', 'them', 'two', 'about', 'world', 'been', 'also', 'will', 'old', 'only', 'where', 'first', 'other', 'while', 'there', 'find', 'war', 'can', 'or', 'had', 'more', 'home', 'years', 'being', 'himself', 'own', 'then', 'through', 'so', 'its', 'before', 'however', 'during', 'some', 'begins', 'between', 'what', 'becomes', 'end', 'must', 'now', 'over', 'takes', 'set', 'no',  'later', 'soon', 'way', 't', 'both', 'many', 'eventually', 'most', 'than', 'day', 'called', 'three', 'against', 'place', 'another', 'off', 'become', 'town', 'how', 'take', 'down', 'well', 'like', 'get', 'each', 'were', 'around', 'because', 'does', 'make', 'much', 'if']
+		for k in stopword:
+			try:
+				del tokenizer.word_index[k]
+			except:
+				pass
+		'''
 	word_index = tokenizer.word_index # mapping dict
-	return tokenizer.texts_to_sequences(texts), word_index
+	sequences = tokenizer.texts_to_sequences(texts)
+	return sequences, word_index
 
 def texts_to_BOW_vectors(texts, word_index):
 	print('Texts to BOW vector...')
@@ -83,15 +100,19 @@ def texts_to_BOW_vectors(texts, word_index):
 				BOW_vectors[idx][word_idx] += 1.0
 	return BOW_vectors
 
-def texts_TFIDF(texts):
+def texts_TFIDF(texts, IDF=None):
 	print('Texts TFIDF...')
-	IDF = np.zeros(texts.shape)
-	IDF[texts!=0] = 1.0
-	IDF = IDF.sum(axis=0)
-	IDF[IDF==0] = len(texts)
-	IDF = np.log(len(texts)/IDF)
-	TFIDF = texts*IDF
-	return TFIDF
+	TF = texts.copy()
+	TF = np.log(TF+1)
+
+	if IDF is None:
+		IDF = np.zeros(texts.shape)
+		IDF[allTexts!=0] = 1.0
+		IDF = IDF.sum(axis=0)
+		IDF[IDF==0] = len(allTexts)
+		IDF = np.log(len(allTexts)/IDF)
+	TFIDF = TF*IDF
+	return TFIDF, IDF
 
 def f1_score(y_true,y_pred):
 	thresh = 0.4
@@ -102,107 +123,106 @@ def f1_score(y_true,y_pred):
 	recall=tp/(K.sum(y_true))
 	return 2*((precision*recall)/(precision+recall))
 
-def gloveEmbedding(word_index, embedding_dim=100, vector_path=os.sep.join(['data','glove.6B','glove.6B.{}d.txt'])):
-	print('Load gloveEmbedding...','embedding_dim:',embedding_dim)
-	# load all vectors from glove
-	vector_path = vector_path.format(embedding_dim)
-	word_vector_map = dict([(line.split()[0], np.array(line.split()[1:]).astype('float32')) for line in open(vector_path, encoding='utf8')])
-	
-	# create embadding matrix
-	embedding_matrix = np.zeros((len(word_index)+1, embedding_dim))
-	for word, idx in word_index.items():
-		if word in word_vector_map:
-			embedding_matrix[idx] = word_vector_map[word]
-
-	# create embadding layer
-	embeddingLayer = Embedding(
-		len(word_index)+1, 
-		embedding_dim, 
-		weights=[embedding_matrix],
-		input_length=MAX_SEQUENCE_LENGTH,
-		trainable=False)
-
-	return embeddingLayer
-
 def build_BOW_model(word_index):
 	print('Build BOW model...')
 	model = Sequential()
-	model.add(Dense(1024, activation='relu', input_dim=len(word_index)+1))
-	model.add(Dropout(0.3))
-	model.add(Dense(512, activation='relu'))
-	model.add(Dropout(0.3))
+	model.add(Dense(256, activation='relu', input_dim=len(word_index)+1))
+	model.add(Dropout(0.5))
+	model.add(Dense(256, activation='relu'))
+	model.add(Dropout(0.5))
 	model.add(Dense(128, activation='relu'))
 	model.add(Dropout(0.3))
 	model.add(Dense(38, activation='sigmoid'))
 	model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=[f1_score])
 	model.summary()
 	return model
+
 def _save_model(path):
 	model.save(path)
 
 def _load_model(path):
-	model = load_model(path, custom_objects={'f1_score':f1_score})
+	model = load_model(path, custom_objects={'f1_score':f1_score,})
 	return model
-	
-def output():
+
+def output(load_model_path):
+	print('Output...')
 	# load test data
-	ids, texts = load_test_data()
+	ids, test_texts = load_test_data()
 
-	# pre-processing
-	texts, word_index = texts_mapping(texts, load=True, path=WORD_INDEX_PATH)
-	texts =	texts_padding(texts)
-
-	# load model
-	model = _load_model('./model/bow_0.566.h5')
-
-	# predict
-	preds = model.predict(texts)
-
-	# load tags dictionary
+	# load map
 	tag_index = load_dict(TAG_INDEX_PATH)
+	word_index = load_dict(WORD_INDEX_PATH)
+	IDF = np.load(IDF_PATH)
 	inverse_tag_index = dict(zip(tag_index.values(),tag_index))
 
+	# pre-processing
+	test_texts, word_index = texts_mapping(test_texts, word_index=word_index)
+	test_texts = texts_to_BOW_vectors(test_texts, word_index)
+	test_texts, IDF = texts_TFIDF(test_texts, IDF=IDF)
+
+	# load model and predict
+	model = _load_model(load_model_path)
+	preds = model.predict(test_texts)
+
 	# output
-	out = open(predict_file_path, 'w')
+	out = open(output_file_path, 'w')
 	out.write('"id","tags"\n')
 	for _id, _pred in zip(ids, preds):
 		line = '"{}","{}"\n'
 		labels = ""
 		for idx, val in enumerate(_pred):
-			if val > 0.4:
+			if val >= 0.5:
 				labels += inverse_tag_index[idx] + " "
+		if all(_pred < 0.5): # atleast 1 label
+			max_id = np.argmax(_pred)
+			labels += inverse_tag_index[max_id] + " "
 		line = line.format(_id, labels.strip())
 		out.write(line)
 	out.close()
 
 # load data
-ids, tags, texts = load_train_data()
+ids, train_tags, train_texts = load_train_data()
+_, test_texts = load_test_data()
+
+# concate
+allTexts = np.concatenate([train_texts, test_texts])
 
 # pre-processing
-tags, tag_index = tags_mapping(tags)
-texts, word_index = texts_mapping(texts)
-texts =	texts_to_BOW_vectors(texts, word_index)
-texts = texts_TFIDF(texts)
+train_tags, tag_index = tags_mapping(train_tags)
+allTexts, word_index = texts_mapping(allTexts)
+allTexts =	texts_to_BOW_vectors(allTexts, word_index)
+allTexts, IDF = texts_TFIDF(allTexts)
+
+# save map
+save_dict(tag_index, TAG_INDEX_PATH)
+save_dict(word_index, WORD_INDEX_PATH)
+np.save(IDF_PATH,IDF)
+
+# de-concate
+train_texts = allTexts[:len(train_texts)]
+test_texts = allTexts[-len(test_texts):]
 
 # validation
-indices = np.arange(texts.shape[0])  
+indices = np.arange(train_texts.shape[0])  
 np.random.shuffle(indices) 
-X, Y = texts[indices], tags[indices]
+X, Y = train_texts[indices], train_tags[indices]
 valid_size = 500
-train_X, train_Y = X[valid_size:][:], Y[valid_size:][:]
+train_X, train_Y = X[valid_size:], Y[valid_size:]
 valid_X, valid_Y = X[:valid_size], Y[:valid_size]
 
 # train
 model = build_BOW_model(word_index)
-earlystopping = EarlyStopping(monitor='val_f1_score', patience = 20, verbose=0, mode='max')
+earlystopping = EarlyStopping(monitor='val_f1_score', patience = 30, verbose=0, mode='max')
 checkpoint = ModelCheckpoint(
-				filepath='./model/rnn_{val_f1_score:.3f}.h5',
-				verbose=0,
+				#filepath='./model/bow_f1_{val_f1_score:.3f}.h5',
+				filepath='./model/bow_best.h5',
+				verbose=1,
 				save_best_only=True,
 				save_weights_only=False,
 				monitor='val_f1_score',
 				mode='max'
 			)
-model.fit(train_X, train_Y,batch_size=128, epochs=50, validation_data=(valid_X,valid_Y))
+model.fit(train_X, train_Y,batch_size=128, epochs=10000, validation_data=(valid_X,valid_Y), callbacks=[earlystopping,checkpoint])
 
-	
+# output
+output(load_model_path='model/bow_best.h5')
