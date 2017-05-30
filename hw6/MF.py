@@ -2,7 +2,7 @@ import os, sys
 
 import pandas as pd
 import numpy as np
-from keras.models import Sequential, load_model, load_weights
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, Embedding, Reshape, Merge
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
@@ -78,7 +78,7 @@ def build_model():
 model = build_model()
 
 # train
-earlystopping = EarlyStopping(monitor='val_loss', patience=5, verbose=0, mode='min')
+earlystopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
 checkpoint = ModelCheckpoint(
 				filepath='./model/mf_weight_best.h5',
 				verbose=1,
@@ -89,7 +89,7 @@ checkpoint = ModelCheckpoint(
 			)
 model.fit(
 		[train_UserID, train_MovieID], train_Rating, 
-		batch_size=1024, epochs=1, 
+		batch_size=512, epochs=1000, 
 		validation_data=([valid_UserID,valid_MovieID],valid_Rating), 
 		callbacks=[earlystopping, checkpoint]
 	)
