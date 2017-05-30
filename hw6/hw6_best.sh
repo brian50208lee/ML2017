@@ -1,0 +1,1 @@
+python3.6 rnn_best.py "$@"
