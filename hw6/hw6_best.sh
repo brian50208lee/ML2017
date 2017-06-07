@@ -1,1 +1,1 @@
-python3.6 rnn_best.py "$@"
+python3.6 best_MF.py "$@"
