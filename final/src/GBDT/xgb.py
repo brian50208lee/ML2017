@@ -6,11 +6,11 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import StratifiedKFold
 import datetime
 	
-submission_format_path = 'SubmissionFormat.csv'
-train_value_path = sys.argv[1] if len(sys.argv) > 1 else 'TrainValue.csv'
-train_label_path = sys.argv[2] if len(sys.argv) > 2 else 'TrainLabel.csv'
-test_path = sys.argv[3] if len(sys.argv) > 3 else 'Test.csv'
+train_value_path = sys.argv[1] if len(sys.argv) > 1 else '../data/TrainValue.csv'
+train_label_path = sys.argv[2] if len(sys.argv) > 2 else '../data/TrainLabel.csv'
+test_path = sys.argv[3] if len(sys.argv) > 3 else '../data/Test.csv'
 prediction_path = sys.argv[4] if len(sys.argv) > 4 else 'prediction.csv'
+submission_format_path = sys.argv[5] if len(sys.argv) > 5 else '../data/SubmissionFormat.csv'
 
 load_best_model = True
 best_model_path = 'best_model/xgb_best.bin'
