@@ -189,9 +189,9 @@ def train():
 
 
   # Merge all the summaries and write them out
-  merged = tf.summary.merge_all()
-  train_writer = tf.summary.FileWriter(log_dir + '/train', sess.graph)
-  test_writer = tf.summary.FileWriter(log_dir + '/test')
+  # merged = tf.summary.merge_all()
+  # train_writer = tf.summary.FileWriter(log_dir + '/train', sess.graph)
+  # test_writer = tf.summary.FileWriter(log_dir + '/test')
 
   # Train the model, and also write summaries.
   # Every epoch, measure test-set accuracy, and write test summaries
