@@ -5,6 +5,7 @@ Requuirement Python Libraries:
 	pandas
 	numpy
 	sklearn
+	scipy
 
 Usage:
 	username$ cd src/GBDT
