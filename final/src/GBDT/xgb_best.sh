@@ -1,1 +1,1 @@
-python xgb.py
+python3 xgb.py
